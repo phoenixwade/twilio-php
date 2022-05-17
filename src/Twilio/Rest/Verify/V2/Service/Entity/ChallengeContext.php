@@ -14,7 +14,6 @@ use Twilio\InstanceContext;
 use Twilio\ListResource;
 use Twilio\Options;
 use Twilio\Rest\Verify\V2\Service\Entity\Challenge\NotificationList;
-use Twilio\Serialize;
 use Twilio\Values;
 use Twilio\Version;
 
@@ -71,10 +70,7 @@ class ChallengeContext extends InstanceContext {
     public function update(array $options = []): ChallengeInstance {
         $options = new Values($options);
 
-        $data = Values::of([
-            'AuthPayload' => $options['authPayload'],
-            'Metadata' => Serialize::jsonObject($options['metadata']),
-        ]);
+        $data = Values::of(['AuthPayload' => $options['authPayload'], ]);
 
         $payload = $this->version->update('POST', $this->uri, [], $data);
 

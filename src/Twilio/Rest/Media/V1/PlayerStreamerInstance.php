@@ -28,7 +28,6 @@ use Twilio\Version;
  * @property string $statusCallback
  * @property string $statusCallbackMethod
  * @property string $endedReason
- * @property int $maxDuration
  */
 class PlayerStreamerInstance extends InstanceResource {
     protected $_playbackGrant;
@@ -56,7 +55,6 @@ class PlayerStreamerInstance extends InstanceResource {
             'statusCallback' => Values::array_get($payload, 'status_callback'),
             'statusCallbackMethod' => Values::array_get($payload, 'status_callback_method'),
             'endedReason' => Values::array_get($payload, 'ended_reason'),
-            'maxDuration' => Values::array_get($payload, 'max_duration'),
         ];
 
         $this->solution = ['sid' => $sid ?: $this->properties['sid'], ];

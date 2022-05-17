@@ -61,9 +61,6 @@ class MessageList extends ListResource {
             'AddressRetention' => $options['addressRetention'],
             'SmartEncoded' => Serialize::booleanToString($options['smartEncoded']),
             'PersistentAction' => Serialize::map($options['persistentAction'], function($e) { return $e; }),
-            'ScheduleType' => $options['scheduleType'],
-            'SendAt' => Serialize::iso8601DateTime($options['sendAt']),
-            'SendAsMms' => Serialize::booleanToString($options['sendAsMms']),
         ]);
 
         $payload = $this->version->create('POST', $this->uri, [], $data);

@@ -50,7 +50,6 @@ class MediaProcessorList extends ListResource {
             'ExtensionEnvironment' => Serialize::jsonObject($options['extensionEnvironment']),
             'StatusCallback' => $options['statusCallback'],
             'StatusCallbackMethod' => $options['statusCallbackMethod'],
-            'MaxDuration' => $options['maxDuration'],
         ]);
 
         $payload = $this->version->create('POST', $this->uri, [], $data);

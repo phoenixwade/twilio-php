@@ -30,8 +30,7 @@ abstract class ServiceOptions {
      * @param bool $customCodeEnabled Whether to allow sending verifications with a
      *                                custom code.
      * @param bool $pushIncludeDate Optional. Include the date in the Challenge's
-     *                              response. Default: false. **Deprecated** do not
-     *                              use this parameter.
+     *                              reponse. Default: true
      * @param string $pushApnCredentialSid Optional. Set APN Credential for this
      *                                     service.
      * @param string $pushFcmCredentialSid Optional. Set FCM Credential for this
@@ -68,8 +67,7 @@ abstract class ServiceOptions {
      * @param bool $customCodeEnabled Whether to allow sending verifications with a
      *                                custom code.
      * @param bool $pushIncludeDate Optional. Include the date in the Challenge's
-     *                              response. Default: false. **Deprecated** do not
-     *                              use this parameter.
+     *                              reponse. Default: true
      * @param string $pushApnCredentialSid Optional. Set APN Credential for this
      *                                     service.
      * @param string $pushFcmCredentialSid Optional. Set FCM Credential for this
@@ -107,8 +105,7 @@ class CreateServiceOptions extends Options {
      * @param bool $customCodeEnabled Whether to allow sending verifications with a
      *                                custom code.
      * @param bool $pushIncludeDate Optional. Include the date in the Challenge's
-     *                              response. Default: false. **Deprecated** do not
-     *                              use this parameter.
+     *                              reponse. Default: true
      * @param string $pushApnCredentialSid Optional. Set APN Credential for this
      *                                     service.
      * @param string $pushFcmCredentialSid Optional. Set FCM Credential for this
@@ -237,11 +234,10 @@ class CreateServiceOptions extends Options {
     }
 
     /**
-     * Optional configuration for the Push factors. If true, include the date in the Challenge's response. Otherwise, the date is omitted from the response. See [Challenge](https://www.twilio.com/docs/verify/api/challenge) resource’s details parameter for more info. Default: false. **Deprecated** do not use this parameter. This timestamp value is the same one as the one found in `date_created`, please use that one instead.
+     * Optional configuration for the Push factors. If true, include the date in the Challenge's reponse. Otherwise, the date is omitted from the response. See [Challenge](https://www.twilio.com/docs/verify/api/challenge) resource’s details parameter for more info. Default: true
      *
      * @param bool $pushIncludeDate Optional. Include the date in the Challenge's
-     *                              response. Default: false. **Deprecated** do not
-     *                              use this parameter.
+     *                              reponse. Default: true
      * @return $this Fluent Builder
      */
     public function setPushIncludeDate(bool $pushIncludeDate): self {
@@ -361,8 +357,7 @@ class UpdateServiceOptions extends Options {
      * @param bool $customCodeEnabled Whether to allow sending verifications with a
      *                                custom code.
      * @param bool $pushIncludeDate Optional. Include the date in the Challenge's
-     *                              response. Default: false. **Deprecated** do not
-     *                              use this parameter.
+     *                              reponse. Default: true
      * @param string $pushApnCredentialSid Optional. Set APN Credential for this
      *                                     service.
      * @param string $pushFcmCredentialSid Optional. Set FCM Credential for this
@@ -503,11 +498,10 @@ class UpdateServiceOptions extends Options {
     }
 
     /**
-     * Optional configuration for the Push factors. If true, include the date in the Challenge's response. Otherwise, the date is omitted from the response. See [Challenge](https://www.twilio.com/docs/verify/api/challenge) resource’s details parameter for more info. Default: false. **Deprecated** do not use this parameter.
+     * Optional configuration for the Push factors. If true, include the date in the Challenge's reponse. Otherwise, the date is omitted from the response. See [Challenge](https://www.twilio.com/docs/verify/api/challenge) resource’s details parameter for more info. Default: true
      *
      * @param bool $pushIncludeDate Optional. Include the date in the Challenge's
-     *                              response. Default: false. **Deprecated** do not
-     *                              use this parameter.
+     *                              reponse. Default: true
      * @return $this Fluent Builder
      */
     public function setPushIncludeDate(bool $pushIncludeDate): self {

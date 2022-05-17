@@ -7,17 +7,21 @@
  * /       /
  */
 
-namespace Twilio\Rest\Insights\V1;
+namespace Twilio\Rest\Supersim\V1;
 
+use Twilio\Exceptions\TwilioException;
 use Twilio\ListResource;
 use Twilio\Options;
 use Twilio\Stream;
 use Twilio\Values;
 use Twilio\Version;
 
-class ConferenceList extends ListResource {
+/**
+ * PLEASE NOTE that this class contains beta products that are subject to change. Use them with caution.
+ */
+class CommandList extends ListResource {
     /**
-     * Construct the ConferenceList
+     * Construct the CommandList
      *
      * @param Version $version Version that contains the resource
      */
@@ -27,11 +31,35 @@ class ConferenceList extends ListResource {
         // Path Solution
         $this->solution = [];
 
-        $this->uri = '/Conferences';
+        $this->uri = '/Commands';
     }
 
     /**
-     * Streams ConferenceInstance records from the API as a generator stream.
+     * Create the CommandInstance
+     *
+     * @param string $sim The sid or unique_name of the SIM to send the Command to
+     * @param string $command The message body of the command
+     * @param array|Options $options Optional Arguments
+     * @return CommandInstance Created CommandInstance
+     * @throws TwilioException When an HTTP error occurs.
+     */
+    public function create(string $sim, string $command, array $options = []): CommandInstance {
+        $options = new Values($options);
+
+        $data = Values::of([
+            'Sim' => $sim,
+            'Command' => $command,
+            'CallbackMethod' => $options['callbackMethod'],
+            'CallbackUrl' => $options['callbackUrl'],
+        ]);
+
+        $payload = $this->version->create('POST', $this->uri, [], $data);
+
+        return new CommandInstance($this->version, $payload);
+    }
+
+    /**
+     * Streams CommandInstance records from the API as a generator stream.
      * This operation lazily loads records as efficiently as possible until the
      * limit
      * is reached.
@@ -58,7 +86,7 @@ class ConferenceList extends ListResource {
     }
 
     /**
-     * Reads ConferenceInstance records from the API as a list.
+     * Reads CommandInstance records from the API as a list.
      * Unlike stream(), this operation is eager and will load `limit` records into
      * memory before returning.
      *
@@ -71,36 +99,29 @@ class ConferenceList extends ListResource {
      *                        page_size is defined but a limit is defined, read()
      *                        will attempt to read the limit with the most
      *                        efficient page size, i.e. min(limit, 1000)
-     * @return ConferenceInstance[] Array of results
+     * @return CommandInstance[] Array of results
      */
     public function read(array $options = [], int $limit = null, $pageSize = null): array {
         return \iterator_to_array($this->stream($options, $limit, $pageSize), false);
     }
 
     /**
-     * Retrieve a single page of ConferenceInstance records from the API.
+     * Retrieve a single page of CommandInstance records from the API.
      * Request is executed immediately
      *
      * @param array|Options $options Optional Arguments
      * @param mixed $pageSize Number of records to return, defaults to 50
      * @param string $pageToken PageToken provided by the API
      * @param mixed $pageNumber Page Number, this value is simply for client state
-     * @return ConferencePage Page of ConferenceInstance
+     * @return CommandPage Page of CommandInstance
      */
-    public function page(array $options = [], $pageSize = Values::NONE, string $pageToken = Values::NONE, $pageNumber = Values::NONE): ConferencePage {
+    public function page(array $options = [], $pageSize = Values::NONE, string $pageToken = Values::NONE, $pageNumber = Values::NONE): CommandPage {
         $options = new Values($options);
 
         $params = Values::of([
-            'ConferenceSid' => $options['conferenceSid'],
-            'FriendlyName' => $options['friendlyName'],
+            'Sim' => $options['sim'],
             'Status' => $options['status'],
-            'CreatedAfter' => $options['createdAfter'],
-            'CreatedBefore' => $options['createdBefore'],
-            'MixerRegion' => $options['mixerRegion'],
-            'Tags' => $options['tags'],
-            'Subaccount' => $options['subaccount'],
-            'DetectedIssues' => $options['detectedIssues'],
-            'EndReason' => $options['endReason'],
+            'Direction' => $options['direction'],
             'PageToken' => $pageToken,
             'Page' => $pageNumber,
             'PageSize' => $pageSize,
@@ -108,32 +129,32 @@ class ConferenceList extends ListResource {
 
         $response = $this->version->page('GET', $this->uri, $params);
 
-        return new ConferencePage($this->version, $response, $this->solution);
+        return new CommandPage($this->version, $response, $this->solution);
     }
 
     /**
-     * Retrieve a specific page of ConferenceInstance records from the API.
+     * Retrieve a specific page of CommandInstance records from the API.
      * Request is executed immediately
      *
      * @param string $targetUrl API-generated URL for the requested results page
-     * @return ConferencePage Page of ConferenceInstance
+     * @return CommandPage Page of CommandInstance
      */
-    public function getPage(string $targetUrl): ConferencePage {
+    public function getPage(string $targetUrl): CommandPage {
         $response = $this->version->getDomain()->getClient()->request(
             'GET',
             $targetUrl
         );
 
-        return new ConferencePage($this->version, $response, $this->solution);
+        return new CommandPage($this->version, $response, $this->solution);
     }
 
     /**
-     * Constructs a ConferenceContext
+     * Constructs a CommandContext
      *
-     * @param string $conferenceSid Conference SID.
+     * @param string $sid The SID that identifies the resource to fetch
      */
-    public function getContext(string $conferenceSid): ConferenceContext {
-        return new ConferenceContext($this->version, $conferenceSid);
+    public function getContext(string $sid): CommandContext {
+        return new CommandContext($this->version, $sid);
     }
 
     /**
@@ -142,6 +163,6 @@ class ConferenceList extends ListResource {
      * @return string Machine friendly representation
      */
     public function __toString(): string {
-        return '[Twilio.Insights.V1.ConferenceList]';
+        return '[Twilio.Supersim.V1.CommandList]';
     }
 }

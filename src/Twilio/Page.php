@@ -136,7 +136,6 @@ abstract class Page implements \Iterator {
      * @link http://php.net/manual/en/iterator.current.php
      * @return mixed Can return any type.
      */
-    #[\ReturnTypeWillChange]
     public function current() {
         return $this->buildInstance($this->records->current());
     }
@@ -157,7 +156,6 @@ abstract class Page implements \Iterator {
      * @link http://php.net/manual/en/iterator.key.php
      * @return mixed scalar on success, or null on failure.
      */
-    #[\ReturnTypeWillChange]
     public function key() {
         return $this->records->key();
     }

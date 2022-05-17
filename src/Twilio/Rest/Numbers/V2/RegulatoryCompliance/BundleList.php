@@ -12,7 +12,6 @@ namespace Twilio\Rest\Numbers\V2\RegulatoryCompliance;
 use Twilio\Exceptions\TwilioException;
 use Twilio\ListResource;
 use Twilio\Options;
-use Twilio\Serialize;
 use Twilio\Stream;
 use Twilio\Values;
 use Twilio\Version;
@@ -126,12 +125,6 @@ class BundleList extends ListResource {
             'RegulationSid' => $options['regulationSid'],
             'IsoCountry' => $options['isoCountry'],
             'NumberType' => $options['numberType'],
-            'HasValidUntilDate' => Serialize::booleanToString($options['hasValidUntilDate']),
-            'SortBy' => $options['sortBy'],
-            'SortDirection' => $options['sortDirection'],
-            'ValidUntilDate<' => Serialize::iso8601DateTime($options['validUntilDateBefore']),
-            'ValidUntilDate' => Serialize::iso8601DateTime($options['validUntilDate']),
-            'ValidUntilDate>' => Serialize::iso8601DateTime($options['validUntilDateAfter']),
             'PageToken' => $pageToken,
             'Page' => $pageNumber,
             'PageSize' => $pageSize,

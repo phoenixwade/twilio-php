@@ -59,8 +59,8 @@ class FleetContext extends InstanceContext {
         $data = Values::of([
             'UniqueName' => $options['uniqueName'],
             'NetworkAccessProfile' => $options['networkAccessProfile'],
-            'IpCommandsUrl' => $options['ipCommandsUrl'],
-            'IpCommandsMethod' => $options['ipCommandsMethod'],
+            'CommandsUrl' => $options['commandsUrl'],
+            'CommandsMethod' => $options['commandsMethod'],
             'SmsCommandsUrl' => $options['smsCommandsUrl'],
             'SmsCommandsMethod' => $options['smsCommandsMethod'],
         ]);

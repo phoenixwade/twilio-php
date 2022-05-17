@@ -34,8 +34,7 @@ abstract class UsageRecordOptions {
      *                            Default is `all`.
      * @param \DateTime $startTime Only include usage that occurred at or after
      *                             this time.
-     * @param \DateTime $endTime Only include usage that occurred before this time
-     *                           (exclusive).
+     * @param \DateTime $endTime Only include usage that occurred before this time.
      * @return ReadUsageRecordOptions Options builder
      */
     public static function read(string $sim = Values::NONE, string $fleet = Values::NONE, string $network = Values::NONE, string $isoCountry = Values::NONE, string $group = Values::NONE, string $granularity = Values::NONE, \DateTime $startTime = Values::NONE, \DateTime $endTime = Values::NONE): ReadUsageRecordOptions {
@@ -62,8 +61,7 @@ class ReadUsageRecordOptions extends Options {
      *                            Default is `all`.
      * @param \DateTime $startTime Only include usage that occurred at or after
      *                             this time.
-     * @param \DateTime $endTime Only include usage that occurred before this time
-     *                           (exclusive).
+     * @param \DateTime $endTime Only include usage that occurred before this time.
      */
     public function __construct(string $sim = Values::NONE, string $fleet = Values::NONE, string $network = Values::NONE, string $isoCountry = Values::NONE, string $group = Values::NONE, string $granularity = Values::NONE, \DateTime $startTime = Values::NONE, \DateTime $endTime = Values::NONE) {
         $this->options['sim'] = $sim;
@@ -164,10 +162,9 @@ class ReadUsageRecordOptions extends Options {
     }
 
     /**
-     * Only include usage that occurred before this time (exclusive), specified in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format. Default is the current time.
+     * Only include usage that occurred before this time, specified in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format. Default is the current time.
      *
-     * @param \DateTime $endTime Only include usage that occurred before this time
-     *                           (exclusive).
+     * @param \DateTime $endTime Only include usage that occurred before this time.
      * @return $this Fluent Builder
      */
     public function setEndTime(\DateTime $endTime): self {

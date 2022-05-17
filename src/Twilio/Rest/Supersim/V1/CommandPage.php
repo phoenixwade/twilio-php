@@ -7,13 +7,16 @@
  * /       /
  */
 
-namespace Twilio\Rest\Insights\V1\Conference;
+namespace Twilio\Rest\Supersim\V1;
 
 use Twilio\Http\Response;
 use Twilio\Page;
 use Twilio\Version;
 
-class ConferenceParticipantPage extends Page {
+/**
+ * PLEASE NOTE that this class contains beta products that are subject to change. Use them with caution.
+ */
+class CommandPage extends Page {
     /**
      * @param Version $version Version that contains the resource
      * @param Response $response Response from the API
@@ -28,14 +31,10 @@ class ConferenceParticipantPage extends Page {
 
     /**
      * @param array $payload Payload response from the API
-     * @return ConferenceParticipantInstance \Twilio\Rest\Insights\V1\Conference\ConferenceParticipantInstance
+     * @return CommandInstance \Twilio\Rest\Supersim\V1\CommandInstance
      */
-    public function buildInstance(array $payload): ConferenceParticipantInstance {
-        return new ConferenceParticipantInstance(
-            $this->version,
-            $payload,
-            $this->solution['conferenceSid']
-        );
+    public function buildInstance(array $payload): CommandInstance {
+        return new CommandInstance($this->version, $payload);
     }
 
     /**
@@ -44,6 +43,6 @@ class ConferenceParticipantPage extends Page {
      * @return string Machine friendly representation
      */
     public function __toString(): string {
-        return '[Twilio.Insights.V1.ConferenceParticipantPage]';
+        return '[Twilio.Supersim.V1.CommandPage]';
     }
 }

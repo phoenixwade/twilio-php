@@ -16,10 +16,8 @@ use Twilio\Rest\Media\V1;
 /**
  * @property \Twilio\Rest\Media\V1 $v1
  * @property \Twilio\Rest\Media\V1\MediaProcessorList $mediaProcessor
- * @property \Twilio\Rest\Media\V1\MediaRecordingList $mediaRecording
  * @property \Twilio\Rest\Media\V1\PlayerStreamerList $playerStreamer
  * @method \Twilio\Rest\Media\V1\MediaProcessorContext mediaProcessor(string $sid)
- * @method \Twilio\Rest\Media\V1\MediaRecordingContext mediaRecording(string $sid)
  * @method \Twilio\Rest\Media\V1\PlayerStreamerContext playerStreamer(string $sid)
  */
 class Media extends Domain {
@@ -88,17 +86,6 @@ class Media extends Domain {
      */
     protected function contextMediaProcessor(string $sid): \Twilio\Rest\Media\V1\MediaProcessorContext {
         return $this->v1->mediaProcessor($sid);
-    }
-
-    protected function getMediaRecording(): \Twilio\Rest\Media\V1\MediaRecordingList {
-        return $this->v1->mediaRecording;
-    }
-
-    /**
-     * @param string $sid The SID that identifies the resource to fetch
-     */
-    protected function contextMediaRecording(string $sid): \Twilio\Rest\Media\V1\MediaRecordingContext {
-        return $this->v1->mediaRecording($sid);
     }
 
     protected function getPlayerStreamer(): \Twilio\Rest\Media\V1\PlayerStreamerList {
