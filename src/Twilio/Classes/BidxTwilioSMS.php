@@ -348,7 +348,37 @@ class BidxTwilioSMS {
 		}
 		 $this->record_sent_message($message, $resp);
 	}
+	
+	 /**
+	 * Send Instant SMS to a number
+	 *
+	 * @param   array  $message  SMS message and  Number to send SMS
+	 * @return  void
+	 */
 
+	 public function send_instant_sms(array $message) {
+		$line = $this->pick_line();
+		$content = $message['sms_message'];
+		$strlen = strlen($message['sms_number']);
+		$num = $message['sms_number'];
+		if($strlen > 10){
+			$num = substr($message['sms_number'], 1);
+		}
+		try {
+			$resp = $this->apicall->messages->create(
+				// Where to send a text message (your cell phone?)
+				'+1'.$num,
+				array(
+						'from' => '+'.$line,
+						'body' => $content,
+						"statusCallback" => "https://"._ADMINDOMAIN."/system_twilio_status_webhook.html"
+					)
+			);
+			
+		} catch (ApiException $e) {
+			throw new Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
+		}
+	 }
 	/**
 	 * Returns the next available Ring Central phone line
 	 *
