@@ -311,8 +311,10 @@ class BidxTwilioSMS {
 		foreach ($messages as $message) {
 			try {
 				$this->send_message($message);
-			} catch (Exception $e) {
-				$this->errors[] = $e->getMessage();
+			} catch (\Exception $e) {
+				$log = sprintf('Error sending SMS to number %s . Error message: %s', $message['sms_number'], $e->getMessage()); 
+				$this->record_error_message($message, [$log]);
+				$this->errors[] = $log;
 			}
 		}
 	}
@@ -412,6 +414,24 @@ class BidxTwilioSMS {
 			'sms_timestamp' => $data->dateCreated->getTimestamp(),
 			'sms_is_read'   => 0,
 			'sms_status'    => ucfirst($data->status),
+			'sms_json'    => $json
+		);
+		$where = array(
+			'sms_id' => $message['sms_id'],
+		);
+		$this->database->update('far_sms_log', $values, $where, 1);
+	}
+
+	/**
+	 * Records outbound error  response 
+	 *
+	 * @param   array     $message
+	 * @param   stdClass  $data
+	 * @return  void
+	 */
+	private function record_error_message(array $message, $data) {
+		$json = serialize($data);
+		$values = array(
 			'sms_json'    => $json
 		);
 		$where = array(
