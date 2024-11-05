@@ -297,6 +297,22 @@ class BidxTwilioSMS {
 	}
 
 	/**
+	 * Expires messages message to the blocked (OPT OUT number)
+	 *
+	 * @return  void
+	 */
+	private function expire_blocked_message( $message) {
+		$values = array(
+			'sms_status' => self::STATUS_SENDING_FAILED,
+		);
+
+		$where = array(
+			'sms_id' => $message['sms_id'],
+		);
+		$this->database->update('far_sms_log', $values, $where, 1);
+	}
+
+	/**
 	 * Sends all pending messages waiting in queue
 	 *
 	 * @return  void
@@ -308,9 +324,18 @@ class BidxTwilioSMS {
 	
 		$messages = $this->database->get_results($sql);
 
+
+		$sql = 'SELECT distinct sms_unsub_number FROM far_sms_unsub_log';
+		$blockedRec = $this->database->get_results($sql);
+		$blocked = [];
+		if(!empty($blockedRec)){
+			$blocked = array_column($blockedRec,"sms_unsub_number");
+		}
+
+
 		foreach ($messages as $message) {
 			try {
-				$this->send_message($message);
+				$this->send_message($message,$blocked);
 			} catch (\Exception $e) {
 				$log = sprintf('Error sending SMS to number %s . Error message: %s', $message['sms_number'], $e->getMessage()); 
 				$this->record_error_message($message, [$log]);
@@ -326,7 +351,7 @@ class BidxTwilioSMS {
 	 * @return  void
 	 * @throws  Exception
 	 */
-	private function send_message(array $message) {
+	private function send_message(array $message,$blocked = []) {
 		$line = $this->pick_line();
 		$content = $message['sms_message'];
 		$strlen = strlen($message['sms_number']);
@@ -334,10 +359,18 @@ class BidxTwilioSMS {
 		if($strlen > 10){
 			$num = substr($message['sms_number'], 1);
 		}
+
+		if(!empty($blocked) && in_array('1'.$num,$blocked )){
+			$this->expire_blocked_message($message);
+			throw new \Exception(sprintf('The message skipped by system because the user(%s) has opted out.', $message['sms_number']));
+
+		}
+		$num = '+1'.$num;
+
 		try {
 			$resp = $this->apicall->messages->create(
 				// Where to send a text message (your cell phone?)
-				'+1'.$num,
+				$num,
 				array(
 						'from' => '+'.$line,
 						'body' => $content,
@@ -345,8 +378,29 @@ class BidxTwilioSMS {
 					)
 			);
 			
-		} catch (ApiException $e) {
-			throw new Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
+		} catch (\Twilio\Exceptions\RestException $e) {
+
+			if(@$e->getCode() == 21610){
+					
+				$values = array(
+					'sms_api_id'    => "N/A",
+ 					'sms_unsub_number'    => substr($num, 1),
+					'sms_unsub_timestamp' => time(),
+				);
+				
+				$columns = implode(', ', array_keys($values));
+				$values  = implode(', ', array_map(array($this->database, 'quote'), $values));
+		
+				$sql = 'INSERT INTO far_sms_unsub_log (%s) VALUES (%s)';
+				$sql = sprintf($sql, $columns, $values);
+				$this->database->query($sql);
+
+				$this->expire_blocked_message($message);
+				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out. :' .$e->getCode(), $message['sms_number']));
+
+			}else{
+				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage() .$e->getCode()));
+			}
 		}
 		 $this->record_sent_message($message, $resp);
 	}
@@ -378,7 +432,7 @@ class BidxTwilioSMS {
 			);
 			
 		} catch (ApiException $e) {
-			throw new Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
+			throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
 		}
 	 }
 	/**
@@ -467,5 +521,32 @@ class BidxTwilioSMS {
 		$sql = sprintf($sql, $columns, $values);
 
 		$this->database->query($sql);
+
+
+		$message = trim($message);
+		if(!empty($message)){
+			$twilioUnSubs = ["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"];
+			$twilioSubs = ["START", "UNSTOP"];
+
+			if(in_array(strtoupper($message),$twilioUnSubs)){
+	
+				$values = array(
+					'sms_api_id'    => $_POST['MessageSid'],
+ 					'sms_unsub_number'    => $number,
+					'sms_unsub_timestamp' => time(),
+				);
+				
+				$columns = implode(', ', array_keys($values));
+				$values  = implode(', ', array_map(array($this->database, 'quote'), $values));
+		
+				$sql = 'INSERT INTO far_sms_unsub_log (%s) VALUES (%s)';
+				$sql = sprintf($sql, $columns, $values);		
+				$this->database->query($sql);
+			}elseif(in_array(strtoupper($message),$twilioSubs)){
+				$sql = "DELETE FROM far_sms_unsub_log WHERE sms_unsub_number = '$number'";
+				$this->database->query($sql);
+			}
+		}
+
 	}
 }
