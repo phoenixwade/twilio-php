@@ -362,7 +362,7 @@ class BidxTwilioSMS {
 
 		if(!empty($blocked) && in_array('1'.$num,$blocked )){
 			$this->expire_blocked_message($message);
-			throw new \Exception(sprintf('The message skipped by system because the user(%s) has opted out.', $message['sms_number']));
+			throw new \Exception(sprintf('The message skipped by system because the user(%s) has opted out or invalid.', $message['sms_number']));
 
 		}
 		$num = '+1'.$num;
@@ -380,13 +380,22 @@ class BidxTwilioSMS {
 			
 		} catch (\Twilio\Exceptions\RestException $e) {
 
-			if(@$e->getCode() == 21610){
+			if(in_array(@$e->getCode(), [21610, 21211])){
 					
 				$values = array(
 					'sms_api_id'    => "N/A",
  					'sms_unsub_number'    => substr($num, 1),
 					'sms_unsub_timestamp' => time(),
 				);
+				
+				switch($e->getCode()){
+					case 21610:
+						$values['sms_unsub_reason'] = 'Unsubscribed';
+						break;
+					case 21211:
+						$values['sms_unsub_reason'] = 'InvalidNumber';
+						break;
+				}
 				
 				$columns = implode(', ', array_keys($values));
 				$values  = implode(', ', array_map(array($this->database, 'quote'), $values));
@@ -396,10 +405,10 @@ class BidxTwilioSMS {
 				$this->database->query($sql);
 
 				$this->expire_blocked_message($message);
-				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out. :' .$e->getCode(), $message['sms_number']));
+				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' .$e->getCode(), $message['sms_number']));
 
 			}else{
-				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage() .$e->getCode()));
+				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(),$e->getCode()));
 			}
 		}
 		 $this->record_sent_message($message, $resp);
@@ -420,6 +429,22 @@ class BidxTwilioSMS {
 		if($strlen > 10){
 			$num = substr($message['sms_number'], 1);
 		}
+
+		$sql = 'SELECT distinct sms_unsub_number FROM far_sms_unsub_log';
+		$blockedRec = $this->database->get_results($sql);
+		$blocked = [];
+		if(!empty($blockedRec)){
+			$blocked = array_column($blockedRec,"sms_unsub_number");
+		}
+
+
+		if(!empty($blocked) && in_array('1'.$num,$blocked )){
+			$this->expire_blocked_message($message);
+			throw new \Exception(sprintf('The message skipped by system because the user(%s) has opted out or invalid.', $message['sms_number']));
+
+		}
+
+
 		try {
 			$resp = $this->apicall->messages->create(
 				// Where to send a text message (your cell phone?)
@@ -431,8 +456,37 @@ class BidxTwilioSMS {
 					)
 			);
 			
-		} catch (ApiException $e) {
-			throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
+		} catch (\Twilio\Exceptions\RestException $e) {
+			if(in_array(@$e->getCode(), [21610, 21211])){
+					
+				$values = array(
+					'sms_api_id'    => "N/A",
+ 					'sms_unsub_number'    => "1".$num,
+					'sms_unsub_timestamp' => time(),
+				);
+				
+				switch($e->getCode()){
+					case 21610:
+						$values['sms_unsub_reason'] = 'Unsubscribed';
+						break;
+					case 21211:
+						$values['sms_unsub_reason'] = 'InvalidNumber';
+					break;
+				}
+
+				$columns = implode(', ', array_keys($values));
+				$values  = implode(', ', array_map(array($this->database, 'quote'), $values));
+		
+				$sql = 'INSERT INTO far_sms_unsub_log (%s) VALUES (%s)';
+				$sql = sprintf($sql, $columns, $values);
+				$this->database->query($sql);
+
+				$this->expire_blocked_message($message);
+				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out. :' .$e->getCode(), $message['sms_number']));
+
+			}else{
+				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(),$e->getCode()));
+			}
 		}
 	 }
 	/**
