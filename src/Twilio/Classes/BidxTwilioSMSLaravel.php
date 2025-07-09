@@ -13,6 +13,7 @@ namespace Twilio\Classes;
 
 use App\Exceptions\ApiException;
 use App\Models\SmsLog;
+use App\Models\SmsUnsub;
 use App\Models\CrmMessagesLog;
 
 class BidxTwilioSMSLaravel
@@ -318,6 +319,23 @@ class BidxTwilioSMSLaravel
 			->update($values);
 	}
 
+
+	/**
+	 * Expires messages message to the blocked (OPT OUT number)
+	 *
+	 * @return  void
+	 */
+	private function expire_blocked_message($message)
+	{
+		$values = array(
+			'sms_status' => self::STATUS_SENDING_FAILED,
+		);
+
+		// Update
+		$update = SmsLog::where('sms_id', $message['sms_id'])
+			->update($values);
+	}
+
 	/**
 	 * Sends all pending messages waiting in queue
 	 *
@@ -330,9 +348,12 @@ class BidxTwilioSMSLaravel
 			->get()->toArray();
 
 		if (!empty($messages)) {
+			$blocked = SmsUnsub::distinct()
+				->pluck('sms_unsub_number')
+				->toArray();
 			foreach ($messages as $message) {
 				try {
-					$this->send_message($message);
+					$this->send_message($message, $blocked);
 				} catch (\Exception $e) {
 					$log = "Error sending SMS to number {$message['sms_number']} . Error message: " . $e->getMessage();
 					$this->record_error_message($message, [$log]);
@@ -358,6 +379,10 @@ class BidxTwilioSMSLaravel
 		if ($strlen > 10) {
 			$num = substr($message['sms_number'], 1);
 		}
+		if (!empty($blocked) && in_array('1' . $num, $blocked)) {
+			$this->expire_blocked_message($message);
+			throw new ApiException(sprintf('The message skipped by system because the user(%s) has opted out or invalid.', $message['sms_number']));
+		}
 		try {
 			$resp = $this->apicall->messages->create(
 				// Where to send a text message (your cell phone?)
@@ -369,7 +394,30 @@ class BidxTwilioSMSLaravel
 
 				)
 			);
-		} catch (ApiException $e) {
+		} catch (\Twilio\Exceptions\RestException $e) {
+			if (in_array(@$e->getCode(), [21610, 21211])) {
+
+				$values = array(
+					'sms_api_id'    => "N/A",
+					'sms_unsub_number'    => substr($num, 1),
+					'sms_unsub_timestamp' => time(),
+				);
+
+				switch ($e->getCode()) {
+					case 21610:
+						$values['sms_unsub_reason'] = 'Unsubscribed';
+						break;
+					case 21211:
+						$values['sms_unsub_reason'] = 'InvalidNumber';
+						break;
+				}
+
+				SmsUnsub::create($values);
+				$this->expire_blocked_message($message);
+				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
+			} else {
+				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode()));
+			}
 			throw new ApiException(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
 		}
 		$this->record_sent_message($message, $resp);
@@ -391,6 +439,14 @@ class BidxTwilioSMSLaravel
 		if ($strlen > 10) {
 			$num = substr($message['sms_number'], 1);
 		}
+
+		$blocked = SmsUnsub::distinct()
+			->pluck('sms_unsub_number')
+			->toArray();
+		if (!empty($blocked) && in_array('1' . $num, $blocked)) {
+			$this->expire_blocked_message($message);
+			throw new ApiException(sprintf('The message skipped by system because the user(%s) has opted out or invalid.', $message['sms_number']));
+		}
 		try {
 			$resp = $this->apicall->messages->create(
 				// Where to send a text message (your cell phone?)
@@ -398,11 +454,33 @@ class BidxTwilioSMSLaravel
 				array(
 					'from' => '+' . $line,
 					'body' => $content,
-					"statusCallback" => "https://" . env('_ADMINDOMAIN') . "/api/twilio_status_webhook",
+					"statusCallback" => "https://" . env('_ADMINDOMAIN') . "/system_twilio_status_webhook.html",
 				)
 			);
 		} catch (ApiException $e) {
-			throw new ApiException(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
+			if (in_array(@$e->getCode(), [21610, 21211])) {
+
+				$values = array(
+					'sms_api_id'    => "N/A",
+					'sms_unsub_number'    => substr($num, 1),
+					'sms_unsub_timestamp' => time(),
+				);
+
+				switch ($e->getCode()) {
+					case 21610:
+						$values['sms_unsub_reason'] = 'Unsubscribed';
+						break;
+					case 21211:
+						$values['sms_unsub_reason'] = 'InvalidNumber';
+						break;
+				}
+
+				SmsUnsub::create($values);
+				$this->expire_blocked_message($message);
+				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
+			} else {
+				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode()));
+			}
 		}
 	}
 	/**
@@ -486,5 +564,22 @@ class BidxTwilioSMSLaravel
 
 		// Insert
 		SmsLog::create($values);
+
+		if (!empty($message)) {
+			$twilioUnSubs = ["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"];
+			$twilioSubs   = ["START", "UNSTOP"];
+
+			$upperMessage = strtoupper($message);
+
+			if (in_array($upperMessage, $twilioUnSubs)) {
+				SmsUnsub::create([
+					'sms_api_id'          => $_POST['MessageSid'],
+					'sms_unsub_number'    => $number,
+					'sms_unsub_timestamp' => time(),
+				]);
+			} elseif (in_array($upperMessage, $twilioSubs)) {
+				SmsUnsub::where('sms_unsub_number', $number)->delete();
+			}
+		}
 	}
 }
