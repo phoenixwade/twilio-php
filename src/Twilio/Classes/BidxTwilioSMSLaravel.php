@@ -444,7 +444,9 @@ class BidxTwilioSMSLaravel
 			->pluck('sms_unsub_number')
 			->toArray();
 		if (!empty($blocked) && in_array('1' . $num, $blocked)) {
-			$this->expire_blocked_message($message);
+			if(!empty($message['sms_id'])){
+				$this->expire_blocked_message($message);
+			}
 			throw new ApiException(sprintf('The message skipped by system because the user(%s) has opted out or invalid.', $message['sms_number']));
 		}
 		try {
@@ -476,10 +478,12 @@ class BidxTwilioSMSLaravel
 				}
 
 				SmsUnsub::create($values);
-				$this->expire_blocked_message($message);
+				if(!empty($message['sms_id'])){
+					$this->expire_blocked_message($message);
+				}
 				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
 			} else {
-				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode()));
+				throw new \Exception(sprintf('Error sending SMS to number %s using line %s.Error code: %s and message: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode(), $e->getMessage()));
 			}
 		}
 	}

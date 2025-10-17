@@ -439,7 +439,9 @@ class BidxTwilioSMS {
 
 
 		if(!empty($blocked) && in_array('1'.$num,$blocked )){
-			$this->expire_blocked_message($message);
+			if(!empty($message['sms_id'])){
+				$this->expire_blocked_message($message);
+			}
 			throw new \Exception(sprintf('The message skipped by system because the user(%s) has opted out or invalid.', $message['sms_number']));
 
 		}
@@ -481,7 +483,9 @@ class BidxTwilioSMS {
 				$sql = sprintf($sql, $columns, $values);
 				$this->database->query($sql);
 
-				$this->expire_blocked_message($message);
+				if(!empty($message['sms_id'])){
+					$this->expire_blocked_message($message);
+				}
 				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out. :' .$e->getCode(), $message['sms_number']));
 
 			}else{
