@@ -390,7 +390,8 @@ class BidxTwilioSMSLaravel
 				array(
 					'from' => '+' . $line,
 					'body' => $content,
-					"statusCallback" => "https://" . env('_ADMINDOMAIN') . "/api/twilio_status_webhook",
+					"statusCallback" => "https://"._ADMINDOMAIN."/system_twilio_status_webhook.html"
+
 
 				)
 			);
@@ -456,7 +457,8 @@ class BidxTwilioSMSLaravel
 				array(
 					'from' => '+' . $line,
 					'body' => $content,
-					"statusCallback" => "https://" . env('_ADMINDOMAIN') . "/system_twilio_status_webhook.html",
+					"statusCallback" => "https://"._ADMINDOMAIN."/system_twilio_status_webhook.html"
+
 				)
 			);
 		} catch (ApiException $e) {
