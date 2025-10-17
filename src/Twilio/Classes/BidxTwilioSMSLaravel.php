@@ -390,7 +390,7 @@ class BidxTwilioSMSLaravel
 				array(
 					'from' => '+' . $line,
 					'body' => $content,
-					"statusCallback" => "https://"._ADMINDOMAIN."/system_twilio_status_webhook.html"
+					"statusCallback" => "https://".config('app.admin_url')."/system_twilio_status_webhook.html"
 
 
 				)
@@ -457,7 +457,7 @@ class BidxTwilioSMSLaravel
 				array(
 					'from' => '+' . $line,
 					'body' => $content,
-					"statusCallback" => "https://"._ADMINDOMAIN."/system_twilio_status_webhook.html"
+					"statusCallback" => "https://".config('app.admin_url')."/system_twilio_status_webhook.html"
 
 				)
 			);
