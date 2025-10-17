@@ -400,7 +400,7 @@ class BidxTwilioSMSLaravel
 
 				$values = array(
 					'sms_api_id'    => "N/A",
-					'sms_unsub_number'    => substr($num, 1),
+					'sms_unsub_number'    => "1".$num,
 					'sms_unsub_timestamp' => time(),
 				);
 
@@ -466,7 +466,7 @@ class BidxTwilioSMSLaravel
 
 				$values = array(
 					'sms_api_id'    => "N/A",
-					'sms_unsub_number'    => substr($num, 1),
+					'sms_unsub_number'    =>"1".$num,
 					'sms_unsub_timestamp' => time(),
 				);
 
