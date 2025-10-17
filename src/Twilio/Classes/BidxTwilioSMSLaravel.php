@@ -461,7 +461,7 @@ class BidxTwilioSMSLaravel
 
 				)
 			);
-		} catch (ApiException $e) {
+		} catch (\Twilio\Exceptions\RestException $e) {
 			if (in_array(@$e->getCode(), [21610, 21211])) {
 
 				$values = array(
