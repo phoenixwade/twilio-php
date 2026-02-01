@@ -1,6 +1,291 @@
 twilio-php Changelog
 ====================
 
+[2026-01-07] Version 8.10.1
+---------------------------
+**Api**
+- Added optional parameter `clientNotificationUrl` for create call api
+- Added optional parameter `clientNotificationUrl` for create participant api
+
+
+[2025-12-17] Version 8.10.0
+---------------------------
+**Library - Chore**
+- [PR #898](https://github.com/twilio/twilio-php/pull/898): add support for new twilio error response. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+- [PR #900](https://github.com/twilio/twilio-php/pull/900): handle existing query params in token pagination. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+
+**Library - Fix**
+- [PR #893](https://github.com/twilio/twilio-php/pull/893): Fix curl_close deprecation warning on PHP 8.5. Thanks to [@adrianbj](https://github.com/adrianbj)!
+
+**Trunking**
+- Corrected the type used for phone number capabilities when accessed through a Trunk. **(breaking change)**
+- Corrected the type used for phone number capabilities when accessed through a Trunk. **(breaking change)**
+
+**Trusthub**
+- Added new parameters in in toll-free initialize api payload.
+- Remove the invalid status transition to Draft from the examples
+- Change the value of email to a valid one in the examples.
+
+
+[2025-12-03] Version 8.9.0
+--------------------------
+**Library - Fix**
+- [PR #894](https://github.com/twilio/twilio-php/pull/894): Regional API domain processing. Thanks to [@manisha1997](https://github.com/manisha1997)!
+
+**Library - Feature**
+- [PR #887](https://github.com/twilio/twilio-php/pull/887): Add support for token based pagination strategy. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+
+**Library - Chore**
+- [PR #890](https://github.com/twilio/twilio-php/pull/890): test correct percent encoding for url params. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+- [PR #891](https://github.com/twilio/twilio-php/pull/891): add patch() to support update and patch operations together. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+- [PR #889](https://github.com/twilio/twilio-php/pull/889): successful delete on all 2xx status codes. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+
+**Api**
+- Add `twiml_session` resource for calls
+- Add `twiml_session` resource for calls
+
+**Monitor**
+- Update default output properties
+
+**Trusthub**
+- Added customer_profile_sid in toll-free initialize api payload.
+
+
+[2025-11-20] Version 8.8.7
+--------------------------
+**Memory**
+- # Memory API Changes
+- Added initial Memory API endpoints with darkseagreen badge status
+
+
+[2025-11-11] Version 8.8.6
+--------------------------
+**Twiml**
+- Add new noun `<ConversationRelaySession>`
+- Add support for `<Recording>` noun under `<Start>` verb
+
+
+[2025-10-28] Version 8.8.5
+--------------------------
+**Library - Chore**
+- [PR #885](https://github.com/twilio/twilio-php/pull/885): add params to patch operation. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+
+**Ai**
+- Add `error` as possible transcript status
+- Add `error` as possible transcript status
+
+**Chat**
+- Updated v2 UserChannel `channel_status` from `not_participating` to `notParticipating`
+
+**Intelligence**
+- Make intelligence work with RestProxy
+- Add additional enums to better represent the possible states
+- Add `error` enum to transcription status to better align with possible outputs
+- Add `json` output type to text classification
+
+**Trusthub**
+- Remove required parameter Primary Profile Sid from compliance_inquiry and compliance_inquiry_individual
+
+**Accounts**
+- Add Messaging GeoPermissions API changes
+
+
+[2025-10-14] Version 8.8.4
+--------------------------
+**Api**
+- Updated description for property `CallerDisplayName` for participant create request
+- Updated description for property `CallerDisplayName` for participant create request
+
+**Accounts**
+- FILE_IS_AUTO_GENERATED: false
+
+
+[2025-09-30] Version 8.8.3
+--------------------------
+**Library - Chore**
+- [PR #881](https://github.com/twilio/twilio-php/pull/881): change oauth token endpoint. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+
+**Insights**
+- Replace `field` with `key` in Request Filters and Response Metadata Filters and  for Reports API
+
+
+[2025-09-25] Version 8.8.2
+--------------------------
+**Library - Chore**
+- [PR #876](https://github.com/twilio/twilio-php/pull/876): PHPDoc cleanup. Thanks to [@craiglondon](https://github.com/craiglondon)!
+- [PR #877](https://github.com/twilio/twilio-php/pull/877): fix error message. Thanks to [@manisha1997](https://github.com/manisha1997)!
+
+**Api**
+- Added optional parameter `CallerDisplayName` for conference participant outbound
+- Updated description for property `to` in the participant create request
+
+
+[2025-09-18] Version 8.8.1
+--------------------------
+**Api**
+- Add `date_created` property to media resource and date_created filtering parameters for read action
+- Updated the Recordings Resource `channels` property to clarify channels = # of channels in the recording resource and how to specify the # of channels in recording download
+
+**Intelligence**
+- Add encryption_credential_sid field in transcripts and services in v2
+
+**Trusthub**
+- Remove beta feature flag for all TH APIs
+- Remove beta feature flag for ComplianceInquiries API to support OneConsole traffic
+
+**Twiml**
+- Add new noun `<AiSession>`
+
+
+[2025-09-04] Version 8.8.0
+--------------------------
+**Api**
+- Remove usage category enum from usage record and usage triggers API **(breaking change)**
+
+
+[2025-08-28] Version 8.7.2
+--------------------------
+**Studio**
+- Add `type` to Step resource APIs
+
+**Verify**
+- Allow to update all passkeys parameters in the service update
+
+
+[2025-08-18] Version 8.7.1
+--------------------------
+**Accounts**
+- Update beta feature flag for consent and contact bulk upsert APIs
+
+**Api**
+- Add multiple missing usage categories to usage records and usage triggers api
+- Add `channels-whatsapp-template-marketing` and `channels-whatsapp-template-utility` to usage categories
+
+**Conversations**
+- Fix `state` spelling for `initializing` enum value
+- Update `state` to include `intializing` for ServiceConversationWithParticipants and ConversationWithParticipants
+
+**Flex**
+- Adding new optional parameter `identity` to `web_channels` API in version `v2`
+
+**Trusthub**
+- Add required Permissions to the ComplianceInquiries API
+
+**Verify**
+- Add passkeys support to Verify API creating and updating services.
+- Update `ienum` type for Factor creation
+- Add passkeys as challenge and factor type
+
+
+[2025-07-24] Version 8.7.0
+--------------------------
+**Events**
+- Remove `SinkSid` parameter when updating subscriptions. **(breaking change)**
+
+**Twiml**
+- Remove Duplicates.
+- Add Polly Generative voices.
+- Add Latest Google (Chirp3-HD) voices.
+
+
+[2025-07-10] Version 8.6.5
+--------------------------
+**Flex**
+- update team name for web_channel, webchat_init_token, webchat_refresh_token
+
+
+[2025-07-03] Version 8.6.4
+--------------------------
+**Library - Docs**
+- [PR #868](https://github.com/twilio/twilio-php/pull/868): add php 8.4 in supported version. Thanks to [@tiwarishubham635](https://github.com/tiwarishubham635)!
+
+**Bulkexports**
+- Changed the type of 'details' field to be a list of objects instead of a single object
+
+**Conversations**
+- Updates to `method` casing for ConfgurationAddress, ConversationScopedWebhook, and ServiceConversationScopedWebhook for RestProxy compatibility
+
+**Proxy**
+- remove shortcodes resource as its no longer used
+
+**Serverless**
+- Change log field level from type `ienum` to `string` in Logs api
+
+**Taskrouter**
+- Remove `URL-encoded` from attributes param definition in tasks
+
+**Trunking**
+- Added `symmetric_rtp_enabled` property on Trunks.
+
+**Twiml**
+- Add support for `<WhatsApp>` noun under `<Dial>` verb
+
+
+[2025-06-12] Version 8.6.3
+--------------------------
+**Library - Fix**
+- [PR #867](https://github.com/twilio/twilio-php/pull/867): updating client to only use http and https. Thanks to [@manisha1997](https://github.com/manisha1997)!
+
+**Api**
+- Change DependentPhoneNumber `capabilities` type `object` and `date_created`, `date_updated` to `date_time<rfc2822>`
+- Updated the `Default` value from 0 to 1 in the Recordings Resource `channels` property
+
+**Serverless**
+- Update `ienum` type level in Logs api
+
+**Verify**
+- Update Channel list in Verify Attempst API
+- Update `ienum` type for Conversion_Status in Verify Attempts API
+
+**Twiml**
+- Add `us2` to the list of supported values for the region attribute in the `<Conference>` TwiML noun.
+
+
+[2025-05-29] Version 8.6.2
+--------------------------
+**Api**
+- Added several usage category enums to `usage_record` API
+
+**Numbers**
+- Update the porting documentation
+
+**Verify**
+- Update `ienum` type for Channels in Verify Attempts API
+
+
+[2025-05-13] Version 8.6.1
+--------------------------
+**Library - Fix**
+- [PR #844](https://github.com/twilio/twilio-php/pull/844): PHP 8.4 deprecation fix. Thanks to [@phpfui](https://github.com/phpfui)!
+
+**Accounts**
+- Changes to add date_of_consent param in Bulk Consent API
+
+**Api**
+- Change `friendly_name`, `date_created` and `date_updated` properties to type `string`.
+
+**Twiml**
+- Update twiml definition for `<ConversationRelay>` and `<Assistant>`
+
+
+[2025-05-05] Version 8.6.0
+--------------------------
+**Api**
+- Add `response_key` for `Usage Triggers` fetch endpoint.
+
+**Flex**
+- Add Update Interaction API
+- Adding `webhook_ttid` as optional parameter in Interactions API
+
+**Serverless**
+- Add node22 as a valid Build runtime
+- Add node20 as a valid Build runtime
+
+**Video**
+- removed `transcribe_participants_on_connect` and `transcriptions_configuration` from the room resource **(breaking change)**
+- Added `transcribe_participants_on_connect` and `transcriptions_configuration` to the room resource
+
+
 [2025-04-07] Version 8.5.0
 --------------------------
 **Library - Docs**
