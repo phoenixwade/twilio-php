@@ -388,12 +388,15 @@ class BidxTwilioSMS {
 					'sms_unsub_timestamp' => time(),
 				);
 				
+			$reason = '';
 				switch($e->getCode()){
 					case 21610:
 						$values['sms_unsub_reason'] = 'Unsubscribed';
+						$reason = 'Unsubscribed';
 						break;
 					case 21211:
 						$values['sms_unsub_reason'] = 'InvalidNumber';
+						$reason = 'InvalidNumber';
 						break;
 				}
 				
@@ -405,6 +408,7 @@ class BidxTwilioSMS {
 				$this->database->query($sql);
 
 				$this->expire_blocked_message($message);
+				$this->add_blacklist_crm_note($message['sms_number'], $reason);
 				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' .$e->getCode(), $message['sms_number']));
 
 			}else{
@@ -467,26 +471,30 @@ class BidxTwilioSMS {
 					'sms_unsub_timestamp' => time(),
 				);
 				
-				switch($e->getCode()){
-					case 21610:
-						$values['sms_unsub_reason'] = 'Unsubscribed';
+				$reason = '';
+					switch($e->getCode()){
+						case 21610:
+							$values['sms_unsub_reason'] = 'Unsubscribed';
+							$reason = 'Unsubscribed';
+							break;
+						case 21211:
+							$values['sms_unsub_reason'] = 'InvalidNumber';
+							$reason = 'InvalidNumber';
 						break;
-					case 21211:
-						$values['sms_unsub_reason'] = 'InvalidNumber';
-					break;
-				}
+					}
 
-				$columns = implode(', ', array_keys($values));
-				$values  = implode(', ', array_map(array($this->database, 'quote'), $values));
+					$columns = implode(', ', array_keys($values));
+					$values  = implode(', ', array_map(array($this->database, 'quote'), $values));
 		
-				$sql = 'INSERT INTO far_sms_unsub_log (%s) VALUES (%s)';
-				$sql = sprintf($sql, $columns, $values);
-				$this->database->query($sql);
+					$sql = 'INSERT INTO far_sms_unsub_log (%s) VALUES (%s)';
+					$sql = sprintf($sql, $columns, $values);
+					$this->database->query($sql);
 
-				if(!empty($message['sms_id'])){
-					$this->expire_blocked_message($message);
-				}
-				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out. :' .$e->getCode(), $message['sms_number']));
+					if(!empty($message['sms_id'])){
+						$this->expire_blocked_message($message);
+					}
+					$this->add_blacklist_crm_note($message['sms_number'], $reason);
+					throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out. :' .$e->getCode(), $message['sms_number']));
 
 			}else{
 				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(),$e->getCode()));
@@ -586,7 +594,7 @@ class BidxTwilioSMS {
 			$twilioUnSubs = ["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"];
 			$twilioSubs = ["START", "UNSTOP"];
 
-			if(in_array(strtoupper($message),$twilioUnSubs)){
+		if(in_array(strtoupper($message),$twilioUnSubs)){
 	
 				$values = array(
 					'sms_api_id'    => $_POST['MessageSid'],
@@ -600,11 +608,54 @@ class BidxTwilioSMS {
 				$sql = 'INSERT INTO far_sms_unsub_log (%s) VALUES (%s)';
 				$sql = sprintf($sql, $columns, $values);		
 				$this->database->query($sql);
+				$this->add_blacklist_crm_note($number, 'Unsubscribed');
 			}elseif(in_array(strtoupper($message),$twilioSubs)){
 				$sql = "DELETE FROM far_sms_unsub_log WHERE sms_unsub_number = '$number'";
 				$this->database->query($sql);
 			}
 		}
 
+	}
+
+	/**
+	 * Adds a CRM contact note when a phone number is blacklisted
+	 *
+	 * @param   string  $phone_number  Phone number that was blacklisted
+	 * @param   string  $reason        Reason for blacklisting (Unsubscribed or InvalidNumber)
+	 * @return  void
+	 */
+	private function add_blacklist_crm_note($phone_number, $reason) {
+		$normalized_phone = preg_replace('/\D/', '', $phone_number);
+		if (strlen($normalized_phone) > 10) {
+			$normalized_phone = substr($normalized_phone, -10);
+		}
+
+		if (empty($normalized_phone)) {
+			return;
+		}
+
+		$sql = "SELECT crm_id, crm_agent_id FROM crm_customers 
+				WHERE (REPLACE(REPLACE(REPLACE(REPLACE(crm_phone, '-', ''), ' ', ''), '(', ''), ')', '') LIKE '%{$normalized_phone}'
+				   OR REPLACE(REPLACE(REPLACE(REPLACE(crm_phone_alt, '-', ''), ' ', ''), '(', ''), ')', '') LIKE '%{$normalized_phone}')
+				  AND crm_deleted = '0'";
+		$customers = $this->database->get_results($sql);
+
+		if (empty($customers)) {
+			return;
+		}
+
+		$reason_text = $reason === 'Unsubscribed' ? 'opted out of SMS' : 'invalid phone number';
+		$note = "Phone number {$phone_number} has been blacklisted due to: {$reason_text}. No further SMS messages will be sent to this number.";
+
+		foreach ($customers as $customer) {
+			$insert_values = array(
+				'crm_customer_id' => $customer['crm_id'],
+				'crm_agent_id' => $customer['crm_agent_id'],
+				'crm_type' => 'System Note',
+				'crm_copy' => $note,
+				'crm_timestamp' => time(),
+			);
+			$this->database->insert('crm_customers_contacts', $insert_values);
+		}
 	}
 }

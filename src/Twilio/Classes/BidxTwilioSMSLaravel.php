@@ -15,6 +15,8 @@ use App\Exceptions\ApiException;
 use App\Models\SmsLog;
 use App\Models\SmsUnsub;
 use App\Models\CrmMessagesLog;
+use App\Models\CrmCustomers;
+use App\Models\CrmCustomersContact;
 
 class BidxTwilioSMSLaravel
 {
@@ -367,10 +369,11 @@ class BidxTwilioSMSLaravel
 	 * Sends a message via Ring Central API
 	 *
 	 * @param   array  $message  Message to send
+	 * @param   array  $blocked  List of blocked phone numbers
 	 * @return  void
 	 * @throws  Exception
 	 */
-	private function send_message(array $message)
+	private function send_message(array $message, array $blocked = [])
 	{
 		$line = $this->pick_line();
 		$content = $message['sms_message'];
@@ -413,8 +416,9 @@ class BidxTwilioSMSLaravel
 						break;
 				}
 
-				SmsUnsub::create($values);
+			SmsUnsub::create($values);
 				$this->expire_blocked_message($message);
+				$this->add_blacklist_crm_note($message['sms_number'], $values['sms_unsub_reason']);
 				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
 			} else {
 				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode()));
@@ -479,10 +483,11 @@ class BidxTwilioSMSLaravel
 						break;
 				}
 
-				SmsUnsub::create($values);
+			SmsUnsub::create($values);
 				if(!empty($message['sms_id'])){
 					$this->expire_blocked_message($message);
 				}
+				$this->add_blacklist_crm_note($message['sms_number'], $values['sms_unsub_reason']);
 				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
 			} else {
 				throw new \Exception(sprintf('Error sending SMS to number %s using line %s.Error code: %s and message: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode(), $e->getMessage()));
@@ -577,15 +582,55 @@ class BidxTwilioSMSLaravel
 
 			$upperMessage = strtoupper($message);
 
-			if (in_array($upperMessage, $twilioUnSubs)) {
+		if (in_array($upperMessage, $twilioUnSubs)) {
 				SmsUnsub::create([
 					'sms_api_id'          => $_POST['MessageSid'],
 					'sms_unsub_number'    => $number,
 					'sms_unsub_timestamp' => time(),
 				]);
+				$this->add_blacklist_crm_note($number, 'Unsubscribed');
 			} elseif (in_array($upperMessage, $twilioSubs)) {
 				SmsUnsub::where('sms_unsub_number', $number)->delete();
 			}
+		}
+	}
+
+	/**
+	 * Adds a CRM contact note when a phone number is blacklisted
+	 *
+	 * @param   string  $phone_number  Phone number that was blacklisted
+	 * @param   string  $reason        Reason for blacklisting (Unsubscribed or InvalidNumber)
+	 * @return  void
+	 */
+	private function add_blacklist_crm_note($phone_number, $reason)
+	{
+		$normalized_phone = preg_replace('/\D/', '', $phone_number);
+		if (strlen($normalized_phone) > 10) {
+			$normalized_phone = substr($normalized_phone, -10);
+		}
+
+		if (empty($normalized_phone)) {
+			return;
+		}
+
+		$customers = CrmCustomers::where(function ($query) use ($normalized_phone) {
+			$query->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(crm_phone, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ?", ['%' . $normalized_phone])
+				->orWhereRaw("REPLACE(REPLACE(REPLACE(REPLACE(crm_phone_alt, '-', ''), ' ', ''), '(', ''), ')', '') LIKE ?", ['%' . $normalized_phone]);
+		})
+			->where('crm_deleted', '0')
+			->get();
+
+		$reason_text = $reason === 'Unsubscribed' ? 'opted out of SMS' : 'invalid phone number';
+		$note = "Phone number {$phone_number} has been blacklisted due to: {$reason_text}. No further SMS messages will be sent to this number.";
+
+		foreach ($customers as $customer) {
+			CrmCustomersContact::create([
+				'crm_customer_id' => $customer->crm_id,
+				'crm_agent_id' => $customer->crm_agent_id,
+				'crm_type' => 'System Note',
+				'crm_copy' => $note,
+				'crm_timestamp' => time(),
+			]);
 		}
 	}
 }
