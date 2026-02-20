@@ -201,6 +201,14 @@ class BidxTwilioSMSLaravel
 	 */
 	public function send($number, $message, $extra = array())
 	{
+		$num = $number;
+		if (strlen($num) > 10) {
+			$num = substr($num, 1);
+		}
+		if (SmsUnsub::where('sms_unsub_number', '1' . $num)->exists()) {
+			return;
+		}
+
 		$values = array(
 			'sms_direction' => self::get_numeric_direction(self::DIRECTION_OUTBOUND),
 			'sms_number'    => $number,
@@ -338,6 +346,28 @@ class BidxTwilioSMSLaravel
 			->update($values);
 	}
 
+	private function expire_all_blocked_pending_messages(array $blocked)
+	{
+		if (empty($blocked)) {
+			return;
+		}
+
+		$blockedNums = array_map(function ($b) {
+			return substr($b, 1);
+		}, $blocked);
+
+		$elevenDigit = $blocked;
+		$tenDigit = $blockedNums;
+
+		SmsLog::where('sms_status', self::STATUS_PENDING)
+			->where('sms_direction', '0')
+			->where(function ($query) use ($elevenDigit, $tenDigit) {
+				$query->whereIn('sms_number', $elevenDigit)
+					->orWhereIn('sms_number', $tenDigit);
+			})
+			->update(['sms_status' => self::STATUS_SENDING_FAILED]);
+	}
+
 	/**
 	 * Sends all pending messages waiting in queue
 	 *
@@ -345,14 +375,20 @@ class BidxTwilioSMSLaravel
 	 */
 	private function send_pending_messages()
 	{
+		$blocked = SmsUnsub::distinct()
+			->pluck('sms_unsub_number')
+			->toArray();
+
+		if (!empty($blocked)) {
+			$this->expire_all_blocked_pending_messages($blocked);
+		}
+
 		$messages = SmsLog::where('sms_status', self::STATUS_PENDING)
+			->where('sms_direction', '0')
 			->limit(self::PER_LINE_LIMIT * count($this->lines))
 			->get()->toArray();
 
 		if (!empty($messages)) {
-			$blocked = SmsUnsub::distinct()
-				->pluck('sms_unsub_number')
-				->toArray();
 			foreach ($messages as $message) {
 				try {
 					$this->send_message($message, $blocked);
@@ -417,13 +453,12 @@ class BidxTwilioSMSLaravel
 				}
 
 			SmsUnsub::create($values);
-				$this->expire_blocked_message($message);
+				$this->expire_all_blocked_pending_messages(['1' . $num]);
 				$this->add_blacklist_crm_note($message['sms_number'], $values['sms_unsub_reason']);
 				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
 			} else {
 				throw new \Exception(sprintf('Error sending SMS to number %s using line %s. Error message: %s and code: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode()));
 			}
-			throw new ApiException(sprintf('Error sending SMS to number %s using line %s. Error message: %s', $message['sms_number'], $line, $e->getMessage()));
 		}
 		$this->record_sent_message($message, $resp);
 	}
@@ -484,11 +519,9 @@ class BidxTwilioSMSLaravel
 				}
 
 			SmsUnsub::create($values);
-				if(!empty($message['sms_id'])){
-					$this->expire_blocked_message($message);
-				}
-				$this->add_blacklist_crm_note($message['sms_number'], $values['sms_unsub_reason']);
-				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
+					$this->expire_all_blocked_pending_messages(['1' . $num]);
+					$this->add_blacklist_crm_note($message['sms_number'], $values['sms_unsub_reason']);
+					throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' . $e->getCode(), $message['sms_number']));
 			} else {
 				throw new \Exception(sprintf('Error sending SMS to number %s using line %s.Error code: %s and message: %s ', $message['sms_number'], $line, $e->getMessage(), $e->getCode(), $e->getMessage()));
 			}
