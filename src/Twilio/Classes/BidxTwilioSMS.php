@@ -193,6 +193,16 @@ class BidxTwilioSMS {
 	 * @return  void
 	 */
 	public function send($number, $message, $extra = array()) {
+		$num = $number;
+		if (strlen($num) > 10) {
+			$num = substr($num, 1);
+		}
+		$sql = sprintf("SELECT 1 FROM far_sms_unsub_log WHERE sms_unsub_number = '%s' LIMIT 1", $this->database->escape('1' . $num));
+		$blocked = $this->database->get_results($sql);
+		if (!empty($blocked)) {
+			return;
+		}
+
 		$values = array(
 			'sms_direction' => self::get_numeric_direction(self::DIRECTION_OUTBOUND),
 			'sms_number'    => $number,
@@ -312,19 +322,36 @@ class BidxTwilioSMS {
 		$this->database->update('far_sms_log', $values, $where, 1);
 	}
 
+	private function expire_all_blocked_pending_messages(array $blocked) {
+		if (empty($blocked)) {
+			return;
+		}
+
+		$blockedNums = array_map(function ($b) {
+			return substr($b, 1);
+		}, $blocked);
+
+		$allNums = array_unique(array_merge($blocked, $blockedNums));
+		$escaped = array_map(function ($n) {
+			return '"' . $this->database->escape($n) . '"';
+		}, $allNums);
+		$inClause = implode(',', $escaped);
+
+		$sql = sprintf(
+			'UPDATE far_sms_log SET sms_status = "%s" WHERE sms_status = "%s" AND sms_direction = "0" AND sms_number IN (%s)',
+			self::STATUS_SENDING_FAILED,
+			self::STATUS_PENDING,
+			$inClause
+		);
+		$this->database->query($sql);
+	}
+
 	/**
 	 * Sends all pending messages waiting in queue
 	 *
 	 * @return  void
 	 */
 	private function send_pending_messages() {
-	
-		$sql = 'SELECT * FROM far_sms_log WHERE sms_status = "%s" LIMIT %d';
-		$sql = sprintf($sql, self::STATUS_PENDING, self::PER_LINE_LIMIT * count($this->lines));
-	
-		$messages = $this->database->get_results($sql);
-
-
 		$sql = 'SELECT distinct sms_unsub_number FROM far_sms_unsub_log';
 		$blockedRec = $this->database->get_results($sql);
 		$blocked = [];
@@ -332,6 +359,13 @@ class BidxTwilioSMS {
 			$blocked = array_column($blockedRec,"sms_unsub_number");
 		}
 
+		if (!empty($blocked)) {
+			$this->expire_all_blocked_pending_messages($blocked);
+		}
+
+		$sql = 'SELECT * FROM far_sms_log WHERE sms_status = "%s" AND sms_direction = "0" LIMIT %d';
+		$sql = sprintf($sql, self::STATUS_PENDING, self::PER_LINE_LIMIT * count($this->lines));
+		$messages = $this->database->get_results($sql);
 
 		foreach ($messages as $message) {
 			try {
@@ -407,7 +441,7 @@ class BidxTwilioSMS {
 				$sql = sprintf($sql, $columns, $values);
 				$this->database->query($sql);
 
-				$this->expire_blocked_message($message);
+				$this->expire_all_blocked_pending_messages([substr($num, 1)]);
 				$this->add_blacklist_crm_note($message['sms_number'], $reason);
 				throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out or invalid contact. :' .$e->getCode(), $message['sms_number']));
 
@@ -490,9 +524,7 @@ class BidxTwilioSMS {
 					$sql = sprintf($sql, $columns, $values);
 					$this->database->query($sql);
 
-					if(!empty($message['sms_id'])){
-						$this->expire_blocked_message($message);
-					}
+					$this->expire_all_blocked_pending_messages(['1' . $num]);
 					$this->add_blacklist_crm_note($message['sms_number'], $reason);
 					throw new \Exception(sprintf('The message cannot be sent because the user(%s) has opted out. :' .$e->getCode(), $message['sms_number']));
 
